@@ -27,7 +27,7 @@ def create_image_path(out_dir, frame_num, digits=5):
 
 
 if __name__ == "__main__":
-    args = ArgumentParser()
+    args = ArgumentParser(description="Extract images from .dml file and save them to `out_path` folder.\n\t Also save raw images if `--save_raw_npy` is 1.")
     args.add_argument("dml_path", help="Path to .dml file.")
     args.add_argument("out_path", help="Path to output folder.")
     args.add_argument("--save_raw_npy", default=1, type=int, help="1 - save raw images as 3D numpy array; - don't")
