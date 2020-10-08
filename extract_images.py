@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import pickle
 from os.path import join
 import numpy as np
 import struct
@@ -21,16 +22,16 @@ def read_image(frame_index, raw_data):
     frame = np.array(struct.unpack("<" + PIXEL_TYPE*FRAME_LEN, frame_data)).reshape(FRAME_SHAPE).astype(PIXEL_TYPE_NP)
     return frame[2:62, 5:94] # image is 60x89 frame
 
-def create_image_path(out_dir, frame_num, digits=5):
-    image_filename = str(frame_num).zfill(digits) + ".png"
+def create_image_path(out_dir, frame_num, digits=5, ext=".png"):
+    image_filename = str(frame_num).zfill(digits) + ext
     return join(out_dir, image_filename)
 
 
 if __name__ == "__main__":
-    args = ArgumentParser(description="Extract images from .dml file and save them to `out_path` folder.\n\t Also save raw images if `--save_raw_npy` is 1.")
+    args = ArgumentParser(description="Extract images from .dml file and save them to `out_path` folder.\n\t If `save_all_imgs` is 1 save all extracted images as .png files, otherwise save reference image and pickled data.,\n\t Data is saved as python dictionary with keys 'reference_image' and 'images'.")
     args.add_argument("dml_path", help="Path to .dml file.")
     args.add_argument("out_path", help="Path to output folder.")
-    args.add_argument("--save_raw_npy", default=1, type=int, help="1 - save raw images as 3D numpy array; - don't")
+    args.add_argument("--save_all_imgs", default=0, type=int, help="1 - save all extracted images as .pngs, 0- save only reference image and pickled data")
     args = args.parse_args()
 
     raw_data = open(args.dml_path, "rb").read()
@@ -39,17 +40,17 @@ if __name__ == "__main__":
     print(f"File {args.dml_path} contains {frame_num} frames.")
 
     reference_image = read_image(0, raw_data)
-    imsave(create_image_path(args.out_path, 0), reference_image)
-    all_imgs = [reference_image]
+    imsave(create_image_path(args.out_path, "reference_image"), reference_image)
+    original_data = {"reference_image": reference_image, "images": []}
 
-    for i in range(1, frame_num):
+    for i in range(2, frame_num): # 0 - ref. img, 1 - zero skip
         image = read_image(i, raw_data) + reference_image
-        if args.save_raw_npy:
-            all_imgs.append(image)
-        print(f"Saving image {i}.")
-        imsave(create_image_path(args.out_path, i), img_as_ubyte(image / np.abs(image).max()))
+        original_data["images"].append(image)
+        if args.save_all_imgs:
+            j = i - 1
+            print(f"Saving image {j}.")
+            imsave(create_image_path(args.out_path, j), img_as_ubyte(image / np.abs(image).max()))
 
-    if args.save_raw_npy:
-        all_imgs = np.array(all_imgs)
-        np.save(join(args.out_path, "all_raw.npy"), all_imgs)
+    with open(create_image_path(args.out_path, "extracted_data", ext=".pck"), "wb") as out_file:
+        pickle.dump(original_data, out_file, protocol=4)
 
