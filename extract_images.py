@@ -43,7 +43,7 @@ if __name__ == "__main__":
     imsave(create_image_path(args.out_path, "reference_image"), reference_image)
     original_data = {"reference_image": reference_image, "images": []}
 
-    for i in range(2, frame_num): # 0 - ref. img, 1 - zero skip
+    for i in range(1, frame_num): # 0 - ref. img
         image = read_image(i, raw_data) + reference_image
         original_data["images"].append(image)
         if args.save_all_imgs:
